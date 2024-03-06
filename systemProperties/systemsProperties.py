@@ -70,7 +70,10 @@ def __csvParser(data):
     parsed_data = ''
     
     # Adding csv columns in first line
-    parsed_data = ','.join(list(data[0].keys()))
+    if len(data):
+        parsed_data = ','.join(list(data[0].keys()))
+    else:
+        parsed_data = 'No data found'
     
     # Parsing each device data
     for device in data:

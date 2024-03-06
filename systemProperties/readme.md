@@ -4,7 +4,7 @@
 
 ```python systemProperties.py <proplist> <systemlist> [-o csv|json] > <destfile>```
 
-**proplist** is the list of system properties to be collected (see below available properties), seperated by commas. Can be 'all' to collect all properties.  
+**proplist** is the list of system properties to be collected (see below available properties), seperated by commas without any space. Can be 'all' to collect all properties. Properties are case sensitive.
 **systemlist** is the file containing the list of devices to collect properties. Can be 'all' to collect properties of all systems.  
 **[-o csv|json]** is the optional output format. Default is json.  
 **destfile** is the file where redirect the output.

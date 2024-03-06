@@ -15,7 +15,7 @@ This script can apply tags in ePO SaaS using a system list in a file. It works o
 
 You may need to install these dependancies:  
 ```requests```  
-To resolve these dependancies you can use: pip install *<package>*
+To resolve these dependancies you can use: pip install *package*
 
 First you must configure **profile** file where are stored your tenant details. 3 settings must be provided:
 * **id** : is API client login

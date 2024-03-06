@@ -175,8 +175,10 @@ class Trellix:
         
         # Error 401 check
         elif response.status_code == 401:
+            logger.debug('Reponse content: {0}'.format(response.text))
 
             try:
+                logger.debug('Reponse message: {0}'.format(response.json()['message']))
                 message = response.json()['message']
                 logger.error('Access denied: {0} {1}. {2}'.format(response, message, known_errors[message]))
                 if message == 'Unauthorized':
@@ -197,6 +199,58 @@ class Trellix:
         else:
             logger.info('Unknown error. Status code: {0}'.format(response))
             logger.debug(response.text)
+            sys.exit()
+
+    
+    def __request(self, type, query, post = {}):
+        """
+        Internal request function to manage timeouts
+        Params:
+            type: must be 'get', 'post' or 'delete' string
+            query: string containing query
+        Result:
+            request result
+        """
+
+        if type == 'get':
+            response = requests.get(query, headers=self.headers)
+            # If response code is 401, it might be a timeout, so we try to auth again
+            if response.status_code == 401:
+                logger.debug('Query return 401 error, it might be a timeout. Trying to refresh session...')
+                self.__auth()
+
+                logger.debug('New attempt to run query {0}:'.format(query))
+                response = requests.get(query, headers=self.headers)
+
+            return response
+
+        elif type == 'post':
+            response = requests.post(query, headers=self.headers, json=post)
+            # If response code is 401, it might be a timeout, so we try to auth again
+            if response.status_code == 401:
+                logger.debug('Query return 401 error, it might be a timeout. Trying to refresh session...')
+                self.__auth()
+
+                logger.debug('New attempt to run query {0}:'.format(query))
+                response = requests.post(query, headers=self.headers, json=post)
+
+            return response
+        
+        elif type == 'delete':
+            response = requests.delete(query, headers=self.headers, json=post)
+            # If response code is 401, it might be a timeout, so we try to auth again
+            if response.status_code == 401:
+                logger.debug('Query return 401 error, it might be a timeout. Trying to refresh session...')
+                self.__auth()
+
+                logger.debug('New attempt to run query {0}:'.format(query))
+                response = requests.delete(query, headers=self.headers, json=post)
+
+            return response
+        
+        else:
+            logger.error('Error in __request function: query is not "get" or "post". Aborting.')
+            sys.exit()
 
 
     def getTagId(self, tag):
@@ -211,7 +265,7 @@ class Trellix:
         logger.debug('getTagId query: {0}'.format(tag_query))
 
         # Send query
-        response = requests.get(tag_query, headers=self.headers)
+        response = self.__request('get', tag_query)
         logger.debug('getTagId response: {0}'.format(response.json()))
 
         # Return tag id if query is successful
@@ -245,7 +299,7 @@ class Trellix:
         logger.debug('getDeviceId query: {0}'.format(device_query))
 
         # Send query
-        response = requests.get(device_query, headers=self.headers)
+        response = self.__request('get', device_query)
         logger.debug('getDeviceId response: {0}'.format(response.json()))
 
         # Return device id if query is successful
@@ -288,7 +342,7 @@ class Trellix:
         while device_query:
             logger.debug('getAllDevices sent query: {0}'.format(device_query))
             logger.debug('Headers: {0}'.format(self.headers))
-            response = requests.get(device_query, headers=self.headers)
+            response = self.__request('get', device_query)
             logger.debug('getAllDevices response: {0}'.format(response))
             
             if self.__responseCheck(response):
@@ -370,7 +424,7 @@ class Trellix:
         logger.debug('ApplyTag payload: {0}'.format(post))
 
         # Send post query
-        response = requests.post(apply_tag_query, headers=self.headers, json=post)
+        response = self.__request('post', apply_tag_query, post)
         logger.debug('ApplyTag response: {0}'.format(response))
         
         if response.status_code == 204:
@@ -394,7 +448,7 @@ class Trellix:
         sys_len = 1
 
         # Forge query
-        apply_tag_query = self.url + 'tags/' + tag_id + '/relationships/devices'
+        clear_tag_query = self.url + 'tags/' + tag_id + '/relationships/devices'
 
         # Forge payload for the delete query
         delete = {
@@ -422,11 +476,11 @@ class Trellix:
             logger.info('Tag is already cleared on all systems.')
             return True
 
-        logger.debug('ClearTag query: {0}'.format(apply_tag_query))
+        logger.debug('ClearTag query: {0}'.format(clear_tag_query))
         logger.debug('ClearTag payload: {0}'.format(delete))
 
         # Send delete query
-        response = requests.delete(apply_tag_query, headers=self.headers, json=delete)
+        response = response = self.__request('delete', clear_tag_query, delete)
         logger.debug('ClearTag response: {0}'.format(response))
         
         if response.status_code == 204:
@@ -467,7 +521,7 @@ class Trellix:
         logger.debug('collectProperties query: {0}'.format(props_query))
 
         # Send query
-        response = requests.get(props_query, headers=self.headers)
+        response = self.__request('get', props_query)
         logger.debug('collectProperties response: {0}'.format(response.json()))
 
         # Return device properties query is successful
@@ -517,7 +571,7 @@ class Trellix:
         while props_query:
             logger.debug('collectAllProperties sent query: {0}'.format(props_query))
             logger.debug('Headers: {0}'.format(self.headers))
-            response = requests.get(props_query, headers=self.headers)
+            response = self.__request('get', props_query)
             logger.debug('collectAllProperties response: {0}'.format(response))
             
             if self.__responseCheck(response):
@@ -535,5 +589,4 @@ class Trellix:
                     logger.debug('getAllDevices next query: none')
 
         return all_props
-                
-          
+      
