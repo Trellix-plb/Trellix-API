@@ -23,7 +23,7 @@ from lib.trellixAPI import logger
 ### Constants ###
 
 # Pull interval in seconds
-PULL_INTERVAL = 10
+PULL_INTERVAL = 600
 LOGGER_NAME = 'Trellix threat event'
 
 ### Functions ###
@@ -58,15 +58,13 @@ def main():
     # Open Trellix API session
     session = trellixAPI.Trellix()
 
-    # Configure log level
-    logging.basicConfig(level=logging.INFO)
-
     # Configure file logger
     if args.file != None:
         logger.info('Setting up log file to write threat events in {0}'.format(args.file))
         file_logger = logging.getLogger(LOGGER_NAME)
         file_log_handler = logging.FileHandler(args.file)
         file_logger.addHandler(file_log_handler)
+        file_logger.setLevel(level=logging.INFO)
 
     # Configue syslog logger
     if args.server != None:
@@ -74,6 +72,7 @@ def main():
         syslog_logger = logging.getLogger(LOGGER_NAME)
         syslog_log_handler = SysLogHandler(address=(args.server, args.port))
         syslog_logger.addHandler(syslog_log_handler)
+        syslog_logger.setLevel(level=logging.INFO)
 
     logger.warning('Starting collecting new threat events...')
 

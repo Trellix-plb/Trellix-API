@@ -35,3 +35,8 @@ Few others settings can be customized:
 * [Applying / clearing tag scripts](applyTag)
 * [Collecting system properties script](systemProperties)
 * [Pull threat events script](pullEvents)
+
+## Quick start
+
+1. Sign in on [Trellix SaaS Portal](https://auth.ui.trellix.com)
+2. Browse 

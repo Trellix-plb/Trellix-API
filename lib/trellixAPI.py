@@ -41,16 +41,6 @@ except:
          
 ### Logger setup ###
 
-# Log settings
-if profile['log_level'] == 'DEBUG':
-    logging.basicConfig(level=logging.DEBUG)
-elif profile['log_level'] == 'INFO':
-    logging.basicConfig(level=logging.INFO)
-elif profile['log_level'] == 'WARN':
-    logging.basicConfig(level=logging.WARN)
-elif profile['log_level'] == 'ERROR':
-    logging.basicConfig(level=logging.ERROR)
-
 logger = logging.getLogger('Trellix API')
 
 # Log format
@@ -60,6 +50,16 @@ formatter = logging.Formatter('%(asctime)s | %(name)s | %(levelname)s | %(messag
 file_handler = logging.FileHandler(profile['log_path']+'TrellixAPI.log')
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
+
+# Log level
+if profile['log_level'] == 'DEBUG':
+    logger.setLevel(level=logging.DEBUG)
+elif profile['log_level'] == 'INFO':
+    logger.setLevel(level=logging.INFO)
+elif profile['log_level'] == 'WARN':
+    logger.setLevel(level=logging.WARN)
+elif profile['log_level'] == 'ERROR':
+    logger.setLevel(level=logging.ERROR)
 
 
 ### Trellix API Class ###
