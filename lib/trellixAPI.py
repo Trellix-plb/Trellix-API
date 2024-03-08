@@ -201,6 +201,9 @@ class Trellix:
             sys.exit()
 
         # Other responses check
+        elif response.status_code == 400:
+            logger.info('Bad request, check filters and other parameters. Status code: {0}'.format(response))
+            return False
         elif response.status_code == 404:
             logger.info('Device not existing. Status code: {0}'.format(response))
             return False
@@ -745,6 +748,10 @@ class Trellix:
                 else:
                     last_event = data['data'][-1]
                     self.__updateThreatEventsCursor(last_event['id'], last_event['attributes']['timestamp'])
+            
+            else:
+                logger.info('Waiting 60 seconds before next try')
+                time.sleep(60)
 
         logger.info('{0} new threat events have been pulled'.format(len(threat_events)))
         return threat_events
