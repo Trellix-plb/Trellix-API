@@ -4,7 +4,6 @@
 
 ```python applyTag.py [-c] <tag> <systemlist> ```
 
-
 **-c** is the optional switch to clear tag instead of apply  
 **tag** is the tag to apply on devices. It must be already existing in ePO.  
 **systemlist** is the file containing the list of devices that will apply tag. Each system per line. Example:  

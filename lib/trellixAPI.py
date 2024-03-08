@@ -28,11 +28,15 @@ AVAILABLE_PROPS = ['id', 'name', 'parentId', 'epoGroup', 'agentGuid', 'lastUpdat
 
 # Load configuration from profile file
 try:
-    with open(PROFILE, 'r') as profile_file:
-        profile = json.load(profile_file)
+    try:
+        with open(PROFILE, 'r') as profile_file:
+            profile = json.load(profile_file)
+
+    except:
+        with open('profile', 'r') as profile_file:
+            profile = json.load(profile_file)
 except:
-    with open('profile', 'r') as profile_file:
-        profile = json.load(profile_file)
+    print('Profile file not found. Exiting...')
 
          
 ### Logger setup ###
@@ -74,7 +78,13 @@ class Trellix:
         # Session settings
         self.headers = profile['api_headers']
         self.url = profile['api_url']
-        self.pagelimit = profile['device_page_limit']
+        self.short_url = profile['api_short_url']
+        self.device_page_limit = profile['device_page_limit']
+        self.events_page_limit = profile['events_page_limit']
+        try:
+            self.threat_events_cursor = profile['events_cursor']
+        except:
+            self.threat_events_cursor = ''
 
         auth_headers = profile['auth_headers']
 
@@ -82,7 +92,7 @@ class Trellix:
 
         data = profile['auth_payload']
 
-        self.__auth()
+        self.auth()
 
         # Simple query to check id settings are correct (get 1 system properties)
         simple_query = self.url + 'devices?fields=id&page%5Boffset%5D=0&page%5Blimit%5D=1'
@@ -92,7 +102,7 @@ class Trellix:
             self.__responseCheck(response)                         
         
 
-    def __auth(self):
+    def auth(self):
         """
         Authenticate to Trellix API
         """
@@ -154,7 +164,8 @@ class Trellix:
             logger.error('Impossible to authenticate to Trellix API. Ending operation...')
             sys.exit()
     
-
+    ### Request functions ###
+            
     def __responseCheck(self, response):
         """
         Verifies if API response is correct or return an error
@@ -182,7 +193,7 @@ class Trellix:
                 message = response.json()['message']
                 logger.error('Access denied: {0} {1}. {2}'.format(response, message, known_errors[message]))
                 if message == 'Unauthorized':
-                    self.__auth()
+                    self.auth()
                     return False
             except Exception as e:
                 logger.debug(str(e))
@@ -214,10 +225,10 @@ class Trellix:
 
         if type == 'get':
             response = requests.get(query, headers=self.headers)
-            # If response code is 401, it might be a timeout, so we try to auth again
-            if response.status_code == 401:
-                logger.debug('Query return 401 error, it might be a timeout. Trying to refresh session...')
-                self.__auth()
+            # If response code is 401 or 403, it might be a timeout, so we try to auth again
+            if response.status_code == 401 or response.status_code == 403:
+                logger.debug('Query return {0} error, it might be a timeout. Trying to refresh session...'.format(response.status_code))
+                self.auth()
 
                 logger.debug('New attempt to run query {0}:'.format(query))
                 response = requests.get(query, headers=self.headers)
@@ -226,10 +237,10 @@ class Trellix:
 
         elif type == 'post':
             response = requests.post(query, headers=self.headers, json=post)
-            # If response code is 401, it might be a timeout, so we try to auth again
-            if response.status_code == 401:
-                logger.debug('Query return 401 error, it might be a timeout. Trying to refresh session...')
-                self.__auth()
+            # If response code is 401 or 403, it might be a timeout, so we try to auth again
+            if response.status_code == 401 or response.status_code == 403:
+                logger.debug('Query return {0} error, it might be a timeout. Trying to refresh session...'.format(response.status_code))
+                self.auth()
 
                 logger.debug('New attempt to run query {0}:'.format(query))
                 response = requests.post(query, headers=self.headers, json=post)
@@ -238,10 +249,10 @@ class Trellix:
         
         elif type == 'delete':
             response = requests.delete(query, headers=self.headers, json=post)
-            # If response code is 401, it might be a timeout, so we try to auth again
-            if response.status_code == 401:
-                logger.debug('Query return 401 error, it might be a timeout. Trying to refresh session...')
-                self.__auth()
+            # If response code is 401 or 403, it might be a timeout, so we try to auth again
+            if response.status_code == 401 or response.status_code == 403:
+                logger.debug('Query return {0} error, it might be a timeout. Trying to refresh session...'.format(response.status_code))
+                self.auth()
 
                 logger.debug('New attempt to run query {0}:'.format(query))
                 response = requests.delete(query, headers=self.headers, json=post)
@@ -249,10 +260,11 @@ class Trellix:
             return response
         
         else:
-            logger.error('Error in __request function: query is not "get" or "post". Aborting.')
+            logger.error('Error in __request function: query is not "get", "post" or "delete". Aborting.')
             sys.exit()
 
-
+    ### Tag functions ###
+            
     def getTagId(self, tag):
         """
         Get tag id from tag name
@@ -285,86 +297,6 @@ class Trellix:
         else:
             logger.info('Failed to find tag {0}. Status code: {1}'.format(tag, response.status_code))
             return 0
-
-
-    def getDeviceId(self, device):
-        """
-        From device name, get device id
-        Params: device, string containing device name
-        Result: device id, int
-        """
-
-        # Forge query
-        device_query = self.url + 'devices?filter=%7B%22EQ%22%3A%7B%22name%22%20%3A%20%22' + device + '%22%7D%7D'
-        logger.debug('getDeviceId query: {0}'.format(device_query))
-
-        # Send query
-        response = self.__request('get', device_query)
-        logger.debug('getDeviceId response: {0}'.format(response.json()))
-
-        # Return device id if query is successful
-        if self.__responseCheck(response):
-
-            # Verify if a device has been found and return device id
-            try:
-                device_id = response.json()['data'][0]['id']
-                logger.debug('Device has been found in system tree, device {0} id is {1}.'.format(device, device_id))
-                return device_id
-            # Return 0 if device is not found in ePO
-            except:
-                logger.info('Device {0} is not found in system tree in ePO'.format(device))
-                return 0
-
-        # Return 0 if query failed
-        else:
-            logger.info('Failed to find device {0}. Status code: {1}'.format(device, response.status_code))
-            return 0
-
-
-    def getAllDevices(self):
-        """
-        List all devices registered in ePO and their applied tags
-        Result: 
-            self.deviceList, dict formatted as "device id":"device name"
-            self.tagsApplied, dict formatted as "device id":"tags list"            
-        """
-        
-        # Forge query
-        offset = 0
-        device_query = self.url + 'devices?fields=id,name,tags&page%5Boffset%5D=' + str(offset) + '&page%5Blimit%5D=' + str(self.pagelimit)
-        
-
-        # Dictionnaries initialisation
-        self.deviceList = {}
-        self.tagsApplied = {}
-        
-        # Query loop to browse system list
-        while device_query:
-            logger.debug('getAllDevices sent query: {0}'.format(device_query))
-            logger.debug('Headers: {0}'.format(self.headers))
-            response = self.__request('get', device_query)
-            logger.debug('getAllDevices response: {0}'.format(response))
-            
-            if self.__responseCheck(response):
-                data = response.json()
-
-                for i in range(len(data['data'])):
-                    self.deviceList[int(data['data'][i]['id'])] = data['data'][i]['attributes']['name']
-                    self.tagsApplied[int(data['data'][i]['id'])] = data['data'][i]['attributes']['tags']
-
-                try:
-                    device_query = data['links']['next']
-                    logger.debug('getAllDevices next query: {0}'.format(device_query))
-                except:
-                    device_query = ""
-                    logger.debug('getAllDevices next query: none')
-                
-            
-        
-        # Dictionnary completed
-        logger.info('Devices information successfully pulled from ePO')
-        logger.debug('System list generated from ePO: {0}'.format(self.deviceList))
-        logger.debug('List of all applied tags per device: {0}'.format(self.tagsApplied))
 
 
     def isTagApplied(self, deviceId, tag):
@@ -489,7 +421,90 @@ class Trellix:
 
         # return response check result if failed
         return self.__responseCheck(response)
-    
+ 
+
+    ### Devices functions ###
+
+    def getDeviceId(self, device):
+        """
+        From device name, get device id
+        Params: device, string containing device name
+        Result: device id, int
+        """
+
+        # Forge query
+        device_query = self.url + 'devices?filter=%7B%22EQ%22%3A%7B%22name%22%20%3A%20%22' + device + '%22%7D%7D'
+        logger.debug('getDeviceId query: {0}'.format(device_query))
+
+        # Send query
+        response = self.__request('get', device_query)
+        logger.debug('getDeviceId response: {0}'.format(response.json()))
+
+        # Return device id if query is successful
+        if self.__responseCheck(response):
+
+            # Verify if a device has been found and return device id
+            try:
+                device_id = response.json()['data'][0]['id']
+                logger.debug('Device has been found in system tree, device {0} id is {1}.'.format(device, device_id))
+                return device_id
+            # Return 0 if device is not found in ePO
+            except:
+                logger.info('Device {0} is not found in system tree in ePO'.format(device))
+                return 0
+
+        # Return 0 if query failed
+        else:
+            logger.info('Failed to find device {0}. Status code: {1}'.format(device, response.status_code))
+            return 0
+
+
+    def getAllDevices(self):
+        """
+        List all devices registered in ePO and their applied tags
+        Result: 
+            self.deviceList, dict formatted as "device id":"device name"
+            self.tagsApplied, dict formatted as "device id":"tags list"            
+        """
+        
+        # Forge query
+        offset = 0
+        device_query = self.url + 'devices?fields=id,name,tags&page%5Boffset%5D=' + str(offset) + '&page%5Blimit%5D=' + str(self.device_page_limit)
+        
+
+        # Dictionnaries initialisation
+        self.deviceList = {}
+        self.tagsApplied = {}
+        
+        # Query loop to browse system list
+        while device_query:
+            logger.debug('getAllDevices sent query: {0}'.format(device_query))
+            logger.debug('Headers: {0}'.format(self.headers))
+            response = self.__request('get', device_query)
+            logger.debug('getAllDevices response: {0}'.format(response))
+            
+            if self.__responseCheck(response):
+                data = response.json()
+
+                for i in range(len(data['data'])):
+                    self.deviceList[int(data['data'][i]['id'])] = data['data'][i]['attributes']['name']
+                    self.tagsApplied[int(data['data'][i]['id'])] = data['data'][i]['attributes']['tags']
+
+                try:
+                    device_query = data['links']['next']
+                    logger.debug('getAllDevices next query: {0}'.format(device_query))
+                except:
+                    device_query = ""
+                    logger.debug('getAllDevices next query: none')
+                
+            
+        
+        # Dictionnary completed
+        logger.info('Devices information successfully pulled from ePO')
+        logger.debug('System list generated from ePO: {0}'.format(self.deviceList))
+        logger.debug('List of all applied tags per device: {0}'.format(self.tagsApplied))
+
+   
     def collectProperties(self, device_id, props = AVAILABLE_PROPS):
         """
         Get device properties
@@ -564,7 +579,7 @@ class Trellix:
 
         # Forge first query
         offset = 0
-        props_query = self.url + 'devices?fields=' + ','.join(filtered_props) + '&page%5Boffset%5D=' + str(offset) + '&page%5Blimit%5D=' + str(self.pagelimit)
+        props_query = self.url + 'devices?fields=' + ','.join(filtered_props) + '&page%5Boffset%5D=' + str(offset) + '&page%5Blimit%5D=' + str(self.device_page_limit)
         logger.debug('collectProperties query: {0}'.format(props_query))
 
         # Query loop to browse system list
@@ -583,10 +598,103 @@ class Trellix:
 
                 try:
                     props_query = data['links']['next']
-                    logger.debug('getAllDevices next query: {0}'.format(props_query))
+                    logger.debug('collectAllProperties next query: {0}'.format(props_query))
                 except:
                     props_query = ""
-                    logger.debug('getAllDevices next query: none')
+                    logger.debug('collectAllProperties next query: none')
 
         return all_props
-      
+    
+
+    ### Events functions ###
+
+    def __updateThreatEventsCursor(self, guid, timestamp):
+        """
+        Internal function to update threat events cursor when new events are pulled
+        and write it in profile file for saving
+        Params:
+            guid: string containing last event guid
+            timestamp: string containing last event timestamp
+        """
+
+        # Update threat event cursor in session
+        self.threat_events_cursor = guid + '_:_' + timestamp
+        logger.debug('Updated threat event cursor: {0}'.format(self.threat_events_cursor))
+
+        # Update profile file with last threat events cursor
+        try:
+            try:
+                with open(PROFILE, 'r') as profile_file:
+                    profile = json.load(profile_file)
+                
+                profile['events_cursor'] = self.threat_events_cursor
+
+                with open(PROFILE, 'w') as profile_file:
+                    json.dump(profile, profile_file, indent = 4)
+
+            except:
+                with open('profile', 'r') as profile_file:
+                    profile = json.load(profile_file)
+
+                profile['events_cursor'] = self.threat_events_cursor
+
+                with open(PROFILE, 'w') as profile_file:
+                    json.dump(profile, profile_file, indent = 4)
+        except:
+            logger.warning('Profile file not found to update Threat event cursor. '
+                         'Pulling progress is not saved and might generate duplicate events')
+
+
+    def pullThreatEvents(self):
+        """
+        Pull all threat events from ePO console from last event (cursor)
+        Param:
+            cursor: string containing last event pulled ('eventguid_:_timestamp')
+                    If no cursor, pull all events from ePO
+        Result:
+            json containing events
+        """
+
+        # Threat events list
+        threat_events = []
+
+        # Forge first events query
+        if self.threat_events_cursor == "":
+            event_query = self.url + 'events?page[limit]=' + str(self.events_page_limit) + '&sort=timestamp'
+        else:
+            event_query = self.url + 'events?page[limit]=' + str(self.events_page_limit) + '&page[cursor]=' + self.threat_events_cursor + '&sort=timestamp'
+        logger.debug('Threat events next query: {0}'.format(event_query))
+
+        # Query loop to pull all new threat events
+        while event_query:
+            logger.debug('pullThreatEvents sent query: {0}'.format(event_query))
+            logger.debug('Headers: {0}'.format(self.headers))
+            response = self.__request('get', event_query)
+            logger.debug('pullThreatEvents response: {0}'.format(response))
+            
+            if self.__responseCheck(response):
+                data = response.json()
+                logger.debug('Data collected: {0}'.format(data))
+
+                # Concatenate all new threat events
+                for i in range(len(data['data'])):
+                    logger.debug('New threat event: {0}'.format(data['data'][i]['attributes']))
+                    threat_events.append(data['data'][i]['attributes'])
+
+                try:
+                    event_query = self.short_url + data['links']['next']
+                    logger.debug('pullThreatEvents next query: {0}'.format(event_query))
+                except:
+                    event_query = ""
+                    logger.debug('pullThreatEvents next query: none')
+
+                # Update threat event cursor if new events are pulled
+                if len(threat_events) == 0:
+                    logger.info('No new threat events to pull')
+                    return threat_events
+                else:
+                    last_event = data['data'][-1]
+                    self.__updateThreatEventsCursor(last_event['id'], last_event['attributes']['timestamp'])
+
+        logger.info('{0} new threat events have been pulled'.format(len(threat_events)))
+        return threat_events

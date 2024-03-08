@@ -9,7 +9,7 @@ Contact: philippe.le.bescond(at)trellix.com
 
 ## Description
 
-This script can apply tags in ePO SaaS using a system list in a file. It works only on ePO SaaS, not on ePO on premise. A Trellix API licence is also required to access ePO SaaS API, you can run 2500 API queries per day, per API licence you own.
+This script can apply tags in ePO SaaS using a system list in a file. It works only on ePO SaaS, not on ePO on premise. A Trellix API license is also required to access ePO SaaS API, you can run 2500 API queries per day, per API license you own.
 
 ## Configuration
 
@@ -34,3 +34,4 @@ Few others settings can be customized:
 
 * [Applying / clearing tag scripts](applyTag)
 * [Collecting system properties script](systemProperties)
+* [Pull threat events script](pullEvents)
