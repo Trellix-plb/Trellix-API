@@ -23,7 +23,7 @@ from lib.trellixAPI import logger
 ### Constants ###
 
 # Pull interval in seconds
-PULL_INTERVAL = 10
+PULL_INTERVAL = 600
 LOGGER_NAME = 'Trellix threat event'
 
 ### Functions ###
