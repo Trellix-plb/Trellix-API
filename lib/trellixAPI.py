@@ -207,6 +207,9 @@ class Trellix:
         elif response.status_code == 409:
             logger.info('Tag is already applied. Status code: {0}'.format(response))
             return False
+        elif response.status_code == 500:
+            logger.error('Impossible to connect to server. Status code: {0}'.format(response))
+            return False
         else:
             logger.info('Unknown error. Status code: {0}'.format(response))
             logger.debug(response.text)
@@ -215,13 +218,15 @@ class Trellix:
     
     def __request(self, type, query, post = {}):
         """
-        Internal request function to manage timeouts
+        Internal request function to manage timeouts and server side errors
         Params:
             type: must be 'get', 'post' or 'delete' string
             query: string containing query
         Result:
             request result
         """
+
+        retries = 5
 
         if type == 'get':
             response = requests.get(query, headers=self.headers)
@@ -233,6 +238,21 @@ class Trellix:
                 logger.debug('New attempt to run query {0}:'.format(query))
                 response = requests.get(query, headers=self.headers)
 
+            # If reponse code is 500, it's generally server side
+            elif response.status_code == 500:
+                for i in range(retries):
+                    logger.debug('Query return {0} error, it might be on server side. Retry {1} of {2} in 60 seconds...'.format(response.status_code, i + 1, retries))
+                    time.sleep(60)
+
+                    logger.debug('New attempt to run query {0}:'.format(query))
+                    response = requests.get(query, headers=self.headers)
+                    
+                    # Check if error 500 is resolved
+                    if response.status_code == 401 or response.status_code == 403:
+                        return self.__request('get', query)
+                    elif response.status_code != 500:
+                        return response
+                    
             return response
 
         elif type == 'post':
@@ -244,6 +264,21 @@ class Trellix:
 
                 logger.debug('New attempt to run query {0}:'.format(query))
                 response = requests.post(query, headers=self.headers, json=post)
+            
+            # If reponse code is 500, it's generally server side
+            elif response.status_code == 500:
+                for i in range(retries):
+                    logger.debug('Query return {0} error, it might be on server side. Retry {1} of {2} in 60 seconds...'.format(response.status_code, i + 1, retries))
+                    time.sleep(60)
+
+                    logger.debug('New attempt to run query {0}:'.format(query))
+                    response = requests.post(query, headers=self.headers, json=post)
+                    
+                    # Check if error 500 is resolved
+                    if response.status_code == 401 or response.status_code == 403:
+                        return self.__request('post', query, post)
+                    elif response.status_code != 500:
+                        return response
 
             return response
         
@@ -257,6 +292,21 @@ class Trellix:
                 logger.debug('New attempt to run query {0}:'.format(query))
                 response = requests.delete(query, headers=self.headers, json=post)
 
+            # If reponse code is 500, it's generally server side
+            elif response.status_code == 500:
+                for i in range(retries):
+                    logger.debug('Query return {0} error, it might be on server side. Retry {1} of {2} in 60 seconds...'.format(response.status_code, i + 1, retries))
+                    time.sleep(60)
+
+                    logger.debug('New attempt to run query {0}:'.format(query))
+                    response = requests.delete(query, headers=self.headers, json=post)
+                    
+                    # Check if error 500 is resolved
+                    if response.status_code == 401 or response.status_code == 403:
+                        return self.__request('delete', query, post)
+                    elif response.status_code != 500:
+                        return response
+                    
             return response
         
         else:
