@@ -45,6 +45,6 @@ Few others settings can be customized:
 5. Below you can generate credentials, it can take a while the first time then you can regenerate credentials instantly. The simplest way is to choose all scopes, but for these scripts, required scopes are: epo.device.r epo.device.w epo.tags.r epo.tags.w epo.evt.r
 6. Once you get your API key and credentials, edit *profile* file with a text editor and fill it with your information
 7. You should be able to run any script, check each script usage
-..* [Applying / clearing tag scripts](applyTag)
-..* [Collecting system properties script](systemProperties)
-..* [Pull threat events script](pullEvents)
+    _ [Applying / clearing tag scripts](applyTag)
+    _ [Collecting system properties script](systemProperties)
+    _ [Pull threat events script](pullEvents)
