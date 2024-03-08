@@ -1,6 +1,6 @@
 # Trellix API library and scripts
 
-Python scripts for Trellix API done by Philippe Le Bescond.  
+Python scripts for Trellix API 
 Contact: philippe.le.bescond(at)trellix.com
 
 ## Disclaimer

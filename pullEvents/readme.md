@@ -2,7 +2,7 @@
 
 ## Script usage
 
-```python pullThreatEvents.py -f <logfile> -s <syslog_server> -p <syslog_port>```
+```python pullThreatEvents.py [-f <logfile>] [-s <syslog_server>] [-p <syslog_port>]```
 
 **-f logfile** is the file where to write threat events  
 **-s syslog_server** is the address of syslog server where to send threat events  
@@ -23,7 +23,10 @@ Log uses raw json data pulled from epo.
 
 ## Settings
 
-By default, each query will try to pull up to 1000 threat events. It can be changed in profile file, in **events_page_limit** but you can only reduce it because 1000 events is the maximum allowed per query.  
-**events_cursor** contain information from the last event pulled. It is used by the API as a cursor to know which events are not pulled yet. If empty, it means that all events in ePO need to be pulled, so if you need to pull all threat events again you can just remove the value. Notice that API retention for events is 3 days.  
+By default, each query will try to pull up to 1000 threat events. It can be changed in *profile* file, using **events_page_limit** setting, but you can only lower it because 1000 events is the maximum allowed per query.  
+
+In *profile*, **events_cursor** contain information from the last event pulled. It is used by the API as a cursor to know which events are not pulled yet. If empty, it means that all events in ePO need to be pulled, so if you need to pull all threat events again you can just remove the value. Notice that API retention for events is 3 days.  
+
 By default, this script pull events every 600 seconds, generating at least 144 query each day (it can be more if there are more than 1000 events to pull). It can be changed by updating *PULL_INTERVAL* constant. If you set a lower pull interval to have more reactivity, you can also comment the session.auth() line, which is used to refresh auth token that expires after 10 minutes. Remember you are limited to execute 2500 queries per day per API license.  
-Syslog forwarding uses UDP
+
+Syslog forwarding uses UDP.
