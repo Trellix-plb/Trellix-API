@@ -32,9 +32,9 @@ So it's more efficient to use applyTag.py if you want to applys tag on few syste
 If you want to apply tags on many systems, applyTagOnMany.py will use: (*total_number_of_systems*)/*device_page_limit* + _1_ api queries.
 
 Example: You have 10k systems in ePO and want to apply tag on 5 systems:  
-* applyTag.py will consume 10 api queries
-* applyTagOnMany.py will consume 501 api queries (with default device_page_limit * setting)
+* applyTag.py will consume 10 api queries (5 queries to get device ids, 5 queries to apply tags)
+* applyTagOnMany.py will consume 501 api queries with default device_page_limit setting (20 devices per query) (500 queries to get all devices properties, 1 query to apply tags)
 
 Example: You have 10k systems in ePO and want to apply tag on 2k systems:  
-* applyTag.py will consume 4000 api queries
-* applyTagOnMany.py will consume 501 api queries (with default device_page_limit setting)
+* applyTag.py will consume 4000 api queries (2000 queries to get device ids, 2000 queries to apply tags)
+* applyTagOnMany.py will consume 501 api queries with default device_page_limit setting (20 devices per query) (500 queries to get all devices properties, 1 query to apply tags)
