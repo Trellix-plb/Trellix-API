@@ -1,6 +1,6 @@
 # Trellix API library and scripts
 
-Python scripts for Trellix API 
+Python scripts for Trellix API  
 Contact: philippe.le.bescond(at)trellix.com
 
 ## Disclaimer
@@ -33,7 +33,7 @@ Few others settings can be customized:
 ## Scripts list
 
 * [Applying / clearing tag scripts](applyTag)
-* [Collecting system properties script](systemProperties)
+* [Collecting system properties and installed products scripts](systemProperties)
 * [Pull threat events script](pullEvents)
 
 ## Quick start
@@ -46,5 +46,5 @@ Few others settings can be customized:
 6. Once you get your API key and credentials, edit *profile* file with a text editor and fill it with your information
 7. You should be able to run any script, check each script usage
     - [Applying / clearing tag scripts](applyTag)
-    - [Collecting system properties script](systemProperties)
+    - [Collecting system properties and installed products scripts](systemProperties)
     - [Pull threat events script](pullEvents)

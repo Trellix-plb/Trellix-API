@@ -1,6 +1,6 @@
-# Collecting system properties
+# Collecting system properties and installed products
 
-## Script usage
+## systemProperties script usage
 
 ```python systemProperties.py <proplist> <systemlist> [-o csv|json] > <destfile>```
 
@@ -11,7 +11,7 @@
 
 **Examples:**  
 Get hostname, last communication and tags for systems in systemlist:  
-```python systemProperties.py name,lastUpdate,tags systemlist csv > systemproperties.csv```  
+```python systemProperties.py name,lastUpdate,tags systemlist -o csv > systemproperties.csv```  
 Get all properties of all systems in ePO:  
 ```python systemProperties.py all all > allprops.json```
 
@@ -19,3 +19,15 @@ Get all properties of all systems in ePO:
 ```
 'id', 'name', 'parentId', 'epoGroup', 'agentGuid', 'lastUpdate', 'agentState', 'nodePath', 'agentPlatform', 'agentVersion','nodeCreatedDate', 'managed', 'tenantId', 'tags', 'excludedTags', 'managedState', 'computerName', 'domainName', 'ipAddress', 'osType', 'osVersion', 'cpuType', 'cpuSpeed', 'numOfCpu', 'totalPhysicalMemory', 'macAddress', 'userName', 'osPlatform','ipHostName', 'isPortable', 'installedProducts', 'assignedTags'
 ```
+
+## installedProducts script usage
+
+```python systemProducts.py <systemlist> [-o csv|json] > <destfile>```
+
+**systemlist** is the file containing the list of devices to collect Trellix products versions.  
+**[-o csv|json]** is the optional output format. Default is json.  
+**destfile** is the file where redirect the output.  
+
+**Example:**  
+Get installed products for systems in systemlist and write the in a csv file:  
+```python systemProperties.py name,lastUpdate,tags systemlist -o csv > installedproducts.csv``` 

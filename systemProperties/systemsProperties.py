@@ -81,7 +81,7 @@ def __csvParser(data):
         device_data = []
 
         for key in device:
-            # Replacing commas by semicolon in properties (espcially tags) to avoid issue in CSV
+            # Replacing commas by semicolon in properties (especially tags) to avoid issue in CSV
             device_data.append(str(device[key]).replace(',',';'))
 
         device_data = ','.join(device_data)

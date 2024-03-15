@@ -43,15 +43,8 @@ except:
 
 logger = logging.getLogger('Trellix API')
 
-# Log format
-formatter = logging.Formatter('%(asctime)s | %(name)s | %(levelname)s | %(message)s')
-
-# Log file configuration
-file_handler = logging.FileHandler(profile['log_path']+'TrellixAPI.log')
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
-
 # Log level
+logging.basicConfig(level=logging.WARN)
 if profile['log_level'] == 'DEBUG':
     logger.setLevel(level=logging.DEBUG)
 elif profile['log_level'] == 'INFO':
@@ -60,6 +53,14 @@ elif profile['log_level'] == 'WARN':
     logger.setLevel(level=logging.WARN)
 elif profile['log_level'] == 'ERROR':
     logger.setLevel(level=logging.ERROR)
+
+# Log format
+formatter = logging.Formatter('%(asctime)s | %(name)s | %(levelname)s | %(message)s')
+
+# Log file configuration
+file_handler = logging.FileHandler(profile['log_path']+'TrellixAPI.log')
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
 
 
 ### Trellix API Class ###
@@ -244,7 +245,8 @@ class Trellix:
             # If reponse code is 500, it's generally server side
             elif response.status_code == 500:
                 for i in range(retries):
-                    logger.debug('Query return {0} error, it might be on server side. Retry {1} of {2} in 60 seconds...'.format(response.status_code, i + 1, retries))
+                    logger.debug(response.text)
+                    logger.debug('Query return error {0}, it might be on server side. Retry {1} of {2} in 60 seconds...'.format(response.status_code, i + 1, retries))
                     time.sleep(60)
 
                     logger.debug('New attempt to run query {0}:'.format(query))
@@ -658,6 +660,32 @@ class Trellix:
 
         return all_props
     
+
+    def getInstalledProducts(self, device_id):
+        """
+        Get the list of installed Trellix products using device id
+        Param:
+            device_id: int
+        Result:
+            json containing list of installed product on device
+        """
+
+        # Forge query
+        products_query = self.url + 'devices/' + str(device_id) + '/installedProducts'
+        logger.debug('getInstalledProducts query: {0}'.format(products_query))
+
+        # Send query
+        response = self.__request('get', products_query)
+        logger.debug('getInstalledProducts response: {0}'.format(response.json()))
+
+        # Return result
+        if self.__responseCheck(response):
+            return response.json()['data']
+        else :
+            logger.debug('No product collected for device {0}'.format(device_id))
+            return {}
+
+
 
     ### Events functions ###
 
