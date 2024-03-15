@@ -40,9 +40,21 @@ def applyTag(tag, devices, clear = False):
         # If device has been found in ePO
         if device_id:
             logger.info('Device {0} id: {1}'.format(device, device_id))
-            if clear:
+
+            # If device is a list (duplicate entries for the same hostname)
+            if isinstance(device_id, list):
+                for id in device_id:
+                    if clear:
+                        logger.debug('Clearing tag on device {0} with id {1}'.format(device, id))
+                        session.clearTag(tag_id, id)
+                    else:
+                        logger.debug('Applying tag on device {0} with id {1}'.format(device, id))
+                        session.applyTag(tag_id, id)
+
+            elif clear:
                 logger.debug('Clearing tag on device {0} with id {1}'.format(device, device_id))
                 session.clearTag(tag_id, device_id)
+
             else:
                 logger.debug('Applying tag on device {0} with id {1}'.format(device, device_id))
                 session.applyTag(tag_id, device_id)
@@ -50,8 +62,6 @@ def applyTag(tag, devices, clear = False):
         # If device has not been found
         elif device_id == 0:
             logger.info('Device {0} not found'.format(device))
-
-    logger.warning('ApplyTag script done.')  
 
 
 def main():
@@ -84,6 +94,9 @@ def main():
     
     # Apply or clear tag
     applyTag(args.tag, devices, args.clear)
+    
+    logger.warning('ApplyTag script done.')
+
 
 if __name__ == "__main__":
     main()

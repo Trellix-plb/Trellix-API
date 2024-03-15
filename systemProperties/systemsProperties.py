@@ -48,14 +48,25 @@ def systemsProperties(props, devices = []):
             
             # If device has been found in ePO
             if device_id:
+
                 logger.info('Device {0} id: {1}'.format(device, device_id))
 
-                # Collect all props if all is specified
-                if 'all' in props:
-                    data.append(session.collectProperties(device_id))
-                # Else collect specfified props
+                # If system is a duplicate entry
+                if isinstance(device_id, list):
+                    for id in device_id:
+                        # Collect all props if all is specified
+                        if 'all' in props:
+                            data.append(session.collectProperties(id))
+                        # Else collect specfified props
+                        else:
+                            data.append(session.collectProperties(id, props))        
                 else:
-                    data.append(session.collectProperties(device_id, props))
+                    # Collect all props if all is specified
+                    if 'all' in props:
+                        data.append(session.collectProperties(device_id))
+                    # Else collect specfified props
+                    else:
+                        data.append(session.collectProperties(device_id, props))
 
             # If device has not been found
             elif device_id == 0:

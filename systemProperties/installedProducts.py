@@ -35,21 +35,38 @@ def systemsProducts(devices):
         
         # Get device id for each device in list
         device_id = session.getDeviceId(device)
+
+        # TODO : Manage duplicate entries
         
         # If device has been found in ePO
         if device_id:
             logger.info('Device {0} id: {1}'.format(device, device_id))
+
             # Format device data
-            device_data = {"name": device,
+            # If system is a duplicate entry
+            if isinstance(device_id, list):
+                for id in device_id:
+                    device_data = {"name": device,
+                            "id": id}
+
+                    # Collect products list for device
+                    product_list = session.getInstalledProducts(id)
+                    product_list_filtered = [product['attributes'] for product in product_list]
+
+                    # Add it to products list
+                    device_data["products"] = product_list_filtered
+                    data.append(device_data)                    
+            else:
+                device_data = {"name": device,
                            "id": device_id}
 
-            # Collect products list for device
-            product_list = session.getInstalledProducts(device_id)
-            product_list_filtered = [product['attributes'] for product in product_list]
+                # Collect products list for device
+                product_list = session.getInstalledProducts(device_id)
+                product_list_filtered = [product['attributes'] for product in product_list]
 
-            # Add it to products list
-            device_data["products"] = product_list_filtered
-            data.append(device_data)
+                # Add it to products list
+                device_data["products"] = product_list_filtered
+                data.append(device_data)
 
         # If device has not been found
         elif device_id == 0:

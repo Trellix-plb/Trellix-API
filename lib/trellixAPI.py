@@ -382,7 +382,7 @@ class Trellix:
         apply_tag_query = self.url + 'tags/' + tag_id + '/relationships/devices'
 
         # Forge payload for the post query
-        post = {
+        payload = {
             "data": [
                 {
                     "type": "devices",
@@ -392,14 +392,21 @@ class Trellix:
         }
         
         if isinstance(device_id, list):
-            post['data'] = device_id
+            # Forge specific payload if apply tag on multiple systems
+            payload = {"data": []}
+            for device in device_id:
+                payload['data'].append(
+                    {
+                        "type": "devices",
+                        "id": int(device)
+                    })
             logger.info('Applying tag using system list')
             sys_len = len(device_id)
         elif isinstance(device_id, int):
-            post['data'][0]['id'] = device_id
+            payload['data'][0]['id'] = device_id
             logger.info('Applying tag using system id')
         elif isinstance(device_id, str):
-            post['data'][0]['id'] = int(device_id)
+            payload['data'][0]['id'] = int(device_id)
             logger.info('Applying tag using system id (string)')
         
         # If no systems are targeted
@@ -408,10 +415,10 @@ class Trellix:
             return True
 
         logger.debug('ApplyTag query: {0}'.format(apply_tag_query))
-        logger.debug('ApplyTag payload: {0}'.format(post))
+        logger.debug('ApplyTag payload: {0}'.format(payload))
 
         # Send post query
-        response = self.__request('post', apply_tag_query, post)
+        response = self.__request('post', apply_tag_query, payload)
         logger.debug('ApplyTag response: {0}'.format(response))
         
         if response.status_code == 204:
@@ -438,7 +445,7 @@ class Trellix:
         clear_tag_query = self.url + 'tags/' + tag_id + '/relationships/devices'
 
         # Forge payload for the delete query
-        delete = {
+        payload = {
             "data": [
                 {
                     "type": "devices",
@@ -448,14 +455,21 @@ class Trellix:
         }
         
         if isinstance(device_id, list):
-            delete['data'] = device_id
-            logger.info('Clearing tag using system list')
+            # Forge specific payload if apply tag on multiple systems
+            payload = {"data": []}
+            for device in device_id:
+                payload['data'].append(
+                    {
+                        "type": "devices",
+                        "id": int(device)
+                    })
+            logger.info('Applying tag using system list')
             sys_len = len(device_id)
         elif isinstance(device_id, int):
-            delete['data'][0]['id'] = device_id
+            payload['data'][0]['id'] = device_id
             logger.info('Clearing tag using system id')
         elif isinstance(device_id, str):
-            delete['data'][0]['id'] = int(device_id)
+            payload['data'][0]['id'] = int(device_id)
             logger.info('Clearing tag using system id (string)')
         
         # If no systems are targeted
@@ -464,10 +478,10 @@ class Trellix:
             return True
 
         logger.debug('ClearTag query: {0}'.format(clear_tag_query))
-        logger.debug('ClearTag payload: {0}'.format(delete))
+        logger.debug('ClearTag payload: {0}'.format(payload))
 
         # Send delete query
-        response = response = self.__request('delete', clear_tag_query, delete)
+        response = response = self.__request('delete', clear_tag_query, payload)
         logger.debug('ClearTag response: {0}'.format(response))
         
         if response.status_code == 204:
@@ -484,7 +498,10 @@ class Trellix:
         """
         From device name, get device id
         Params: device, string containing device name
-        Result: device id, int
+        Result: 
+            device id, int if only 1 system existing
+            device_ids, list if duplicates entries
+            0 if system not existing
         """
 
         # Forge query
@@ -497,14 +514,20 @@ class Trellix:
 
         # Return device id if query is successful
         if self.__responseCheck(response):
-
+            
+            device_list = response.json()['data']
             # Verify if a device has been found and return device id
-            try:
-                device_id = response.json()['data'][0]['id']
+            if len(device_list) == 1:
+                device_id = device_list[0]['id']
                 logger.debug('Device has been found in system tree, device {0} id is {1}.'.format(device, device_id))
                 return device_id
+            # Verify if there are multiple system matching system name (duplicate entries)
+            elif len(device_list) > 1:
+                device_ids = [d['id'] for d in device_list]
+                logger.info('{0} systems have been found matching {1} hostname: {2}'.format(len(response.json()['data']), device, device_ids))
+                return device_ids
             # Return 0 if device is not found in ePO
-            except:
+            else:
                 logger.info('Device {0} is not found in system tree in ePO'.format(device))
                 return 0
 

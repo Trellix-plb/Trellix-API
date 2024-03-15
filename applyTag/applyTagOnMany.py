@@ -50,8 +50,7 @@ def applyTagOnMany(tag, devices, clear = False):
     for id in device_id_list:
         # XNOR with isTagApplied and clear
         if not(session.isTagApplied(id, tag) ^ clear):
-            dict = {"type": "devices", "id": id}
-            device_list.append(dict)  
+            device_list.append(id)  
         else:
             if clear:
                 logger.info('Tag is not applied on device {0}'.format(id)) 
